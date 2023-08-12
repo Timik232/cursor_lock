@@ -3,6 +3,7 @@ import pyautogui
 import win32api
 import tkinter as tk
 import time
+import ctypes
 
 screen_size = pyautogui.size()
 xMin = 0
@@ -20,6 +21,8 @@ class CursorBlocker:
         self.running = False
         self.button = tk.Button(root, text="Start", command=self.toggle_block)
         self.button.pack()
+        self.monitors = win32api.EnumDisplayMonitors()
+        self.active_monitor = self.monitors[0]
 
 
         # Создаем метку для отображения статуса
@@ -33,6 +36,7 @@ class CursorBlocker:
             self.running = False
             self.button.config(text="Start")
             self.label.config(text="Cursor unblocked.")
+            win32api.ClipCursor((0,0,0,0))
         else:
             # Если блокировка курсора не запущена, запускаем ее
             self.running = True
@@ -41,20 +45,12 @@ class CursorBlocker:
             self.block_cursor()
 
     def block_cursor(self):
-        x, y = pyautogui.position()
-        if x < x_min:
-            x = x_min
-        elif x > x_max:
-            x = x_max
-
-        if y < y_min:
-            y = y_min
-        elif y > y_max:
-            y = y_max
-
-        win32api.SetCursorPos((x, y))
-        if self.running:
-            self.root.after(5, self.block_cursor)
+        monitor = self.active_monitor
+        left = monitor[2][0]
+        top = monitor[2][1]
+        right = left + monitor[2][2]
+        bottom = top + monitor[2][3]
+        win32api.ClipCursor((left, top, right, bottom))
 
     def start_stop_block(self, event):
         self.toggle_block()

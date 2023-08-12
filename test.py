@@ -23,6 +23,10 @@ running = False
 class CursorBlocker(QWidget):
     def __init__(self):
         super().__init__()
+        self.monitors = win32api.EnumDisplayMonitors()
+        self.max_number = len(self.monitors)
+        self.number = 0
+        self.active_monitor = self.monitors[self.number]
         self.initUI()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.block_cursor)
@@ -43,6 +47,8 @@ class CursorBlocker(QWidget):
             self.tray_icon.setVisible(False)
             exit()
 
+    def show_application(self):
+        self.showNormal()
 
     def initUI(self):
         self.setWindowTitle("Cursor Blocker")
@@ -53,13 +59,18 @@ class CursorBlocker(QWidget):
         self.stop_button.clicked.connect(self.stop_block)
         self.stop_button.setEnabled(False)
         self.label = QLabel("Cursor unblocked.", self)
+        self.label_monitor = QLabel(f"Monitor {self.number + 1}", self)
         self.tint = QLabel("Press shift + L to toggle block", self)
+        self.tint_change = QLabel("Press shift + ] to change monitor", self)
+
 
         # Размещаем элементы на форме
-        self.start_button.move(50, 50)
-        self.stop_button.move(150, 50)
-        self.label.move(50, 100)
-        self.tint.move(50,20)
+        self.start_button.move(50, 75)
+        self.stop_button.move(150, 75)
+        self.label.move(50, 110)
+        self.tint.move(50, 20)
+        self.tint_change.move(50, 50)
+        self.label_monitor.move(50, 130)
 
         self.tray_icon = QSystemTrayIcon(self)
         self.tray_icon.setIcon(QIcon('icon.ico'))
@@ -69,7 +80,10 @@ class CursorBlocker(QWidget):
         # Создаем меню для значка в системном лотке
         menu = QMenu()
         exit_action = QAction('Exit', self)
+        open_action = QAction('Open', self)
         exit_action.triggered.connect(lambda: self.closeEvent(None, True))
+        open_action.triggered.connect(self.show_application)
+        menu.addAction(open_action)
         menu.addAction(exit_action)
         self.tray_icon.setContextMenu(menu)
 
@@ -92,27 +106,12 @@ class CursorBlocker(QWidget):
         self.timer.stop()
 
     def block_cursor(self):
-        x, y = pyautogui.position()
-        new_x = x
-        new_y = y
-
-        # если курсор находится в пределах экрана, двигать без изменений
-        if x_min < x < x_max:
-            new_x = x
-        elif x <= x_min:
-            new_x = x_min
-        elif x >= x_max:
-            new_x = x_max
-
-        if y_min < y < y_max:
-            new_y = y
-        elif y <= y_min:
-            new_y = y_min
-        elif y >= y_max:
-            new_y = y_max
-
-        # перемещаем курсор в новые координаты
-        win32api.SetCursorPos((new_x, new_y))
+        monitor = self.active_monitor
+        left = monitor[2][0]
+        top = monitor[2][1]
+        right = left + monitor[2][2]
+        bottom = top + monitor[2][3]
+        win32api.ClipCursor((left, top, right, bottom))
 
     def toggle(self):
         if self.timer.isActive():
@@ -120,15 +119,35 @@ class CursorBlocker(QWidget):
             self.start_button.setEnabled(True)
             self.stop_button.setEnabled(False)
             self.label.setText("Cursor unblocked.")
+            win32api.ClipCursor((0, 0, 0, 0))
         else:
             self.start_button.setEnabled(False)
             self.stop_button.setEnabled(True)
             self.label.setText("Cursor blocked.")
             self.timer.start(1)
 
+    def next_monitor(self, flag):
+        if flag:
+            self.number += 1
+        else:
+            self.number -= 1
+        if self.number >= self.max_number:
+            self.number = 0
+        if self.number < 0:
+            self.number = self.max_number - 1
+        self.label_monitor.setText(f"Monitor {self.number + 1}")
+        self.active_monitor = self.monitors[self.number]
+        if not self.timer.isActive():
+            self.timer.stop()
+            self.timer.start(1)
+
     def keyPressEvent(self, event):
         if event.nativeScanCode() == 38 and event.modifiers() == Qt.ShiftModifier:
             self.toggle()
+        if event.nativeScanCode() == 27 and event.modifiers() == Qt.ShiftModifier:
+            self.next_monitor(True)
+        if event.nativeScanCode() == 26 and event.modifiers() == Qt.ShiftModifier:
+            self.next_monitor(False)
 
 
 if __name__ == '__main__':

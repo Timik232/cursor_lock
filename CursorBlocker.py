@@ -1,30 +1,15 @@
 import sys
 import keyboard
-import pyautogui
-from PyQt5.uic.properties import QtCore
 from screeninfo import get_monitors
 import win32api
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QSystemTrayIcon, QMenu, QAction
-from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWinExtras import QWinTaskbarButton
-from PyQt5 import QtGui, QtWidgets
-import time
+from PyQt5 import QtGui
 import threading
-import PyQt5.QtGui
-import PyQt5.QtCore
 import ctypes
 myappid = 'Timur.CursorBlocker.1.0'
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-
-screen_size = pyautogui.size()
-xMin = 0
-yMin = 0
-monitor_info = win32api.GetMonitorInfo(win32api.EnumDisplayMonitors()[0][0])
-monitor_left, monitor_top, monitor_right, monitor_bottom = monitor_info.get("Monitor")
-x_min, y_min = monitor_left+2, monitor_top-2
-x_max, y_max = monitor_right-2, monitor_bottom+2
-running = False
 
 
 class CursorBlocker(QWidget):
@@ -54,7 +39,7 @@ class CursorBlocker(QWidget):
     def show_application(self):
         self.showNormal()
 
-    def initUI(self):        
+    def initUI(self):
         icon = 'icon.ico'
         self.setWindowTitle("Cursor Blocker")
         # Создаем кнопки и метки для отображения статуса

@@ -156,4 +156,4 @@ class CursorBlocker(QWidget):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = CursorBlocker()
-    sys.exit(app.exec_())
+    app.exec_()
